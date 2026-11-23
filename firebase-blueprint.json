@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "DormClean student cleaning booking with Daet location, slot, cleaner assignment, payment, and review state.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the student who booked" },
+        "userEmail": { "type": "string", "description": "Authenticated user email" },
+        "customerName": { "type": "string", "description": "Student contact name" },
+        "packageId": { "type": "string", "enum": ["quick_reset", "standard_dorm"] },
+        "packageName": { "type": "string", "description": "Package display title" },
+        "basePrice": { "type": "integer", "description": "Base peso rate before discounts" },
+        "occupancyType": { "type": "string", "enum": ["solo", "shared"] },
+        "occupancyLabel": { "type": "string", "description": "Occupancy label" },
+        "occupancyFee": { "type": "integer", "description": "0 or 100" },
+        "addons": { "type": "array", "description": "Selected optional add-on titles (max 5)" },
+        "addonsTotal": { "type": "integer", "description": "Total peso fee for add-ons" },
+        "othersRequest": { "type": "string", "description": "Optional custom student cleaning notes" },
+        "dateKey": { "type": "string", "description": "YYYY-MM-DD service date" },
+        "dateLabel": { "type": "string", "description": "Formatted date string" },
+        "slotId": { "type": "string", "enum": ["08_10", "10_12", "13_15", "15_17", "18_20"] },
+        "slotLabel": { "type": "string", "description": "2-hour arrival window label" },
+        "agentId": { "type": "string", "enum": ["agent_nopat", "agent_orit", "agent_guerrero"] },
+        "agentName": { "type": "string", "description": "Assigned cleaner name" },
+        "barangay": { "type": "string", "enum": ["Daet Centro", "Lag-on", "Magang", "Bagasbas", "Camambugan", "Other Daet Area"] },
+        "streetAddress": { "type": "string", "description": "House, boarding house, or street address" },
+        "roomNumber": { "type": "string", "description": "Room or house number" },
+        "floorGate": { "type": "string", "description": "Optional floor or gate description" },
+        "landmark": { "type": "string", "description": "Optional nearest landmark" },
+        "arrivalNotes": { "type": "string", "description": "Optional arrival notes" },
+        "contactChannel": { "type": "string", "enum": ["Messenger", "SMS Text", "Phone Call", "WhatsApp"] },
+        "contactHandle": { "type": "string", "description": "Messenger link/name or mobile number" },
+        "paymentMethod": { "type": "string", "enum": ["gcash_qr", "cash_on_arrival"] },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "submitted", "verified"] },
+        "gcashRefNumber": { "type": "string", "description": "Demo GCash reference number" },
+        "referralCode": { "type": "string", "description": "Applied referral code" },
+        "referralDiscount": { "type": "integer", "description": "0 or 50" },
+        "dayPromoName": { "type": "string", "description": "Applied admin day promo name" },
+        "dayPromoDiscount": { "type": "integer", "description": "Applied admin day discount amount" },
+        "totalAmount": { "type": "integer", "description": "Final peso total" },
+        "status": { "type": "string", "enum": ["pending_review", "confirmed", "crew_on_site", "completed", "cancelled"] },
+        "rating": { "type": "integer", "description": "0 for unrated, 1-5 once rated" },
+        "tipAmount": { "type": "integer", "description": "Optional cleaner tip in pesos" },
+        "reviewComment": { "type": "string", "description": "Optional student review comment" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": [
+        "userId", "userEmail", "customerName", "packageId", "packageName", "basePrice",
+        "occupancyType", "occupancyLabel", "occupancyFee", "addons", "addonsTotal",
+        "othersRequest", "dateKey", "dateLabel", "slotId", "slotLabel", "agentId", "agentName",
+        "barangay", "streetAddress", "roomNumber", "floorGate", "landmark", "arrivalNotes",
+        "contactChannel", "contactHandle", "paymentMethod", "paymentStatus", "gcashRefNumber",
+        "referralCode", "referralDiscount", "dayPromoName", "dayPromoDiscount", "totalAmount",
+        "status", "rating", "tipAmount", "reviewComment", "createdAt", "updatedAt"
+      ]
+    },
+    "SlotLock": {
+      "title": "SlotLock",
+      "description": "PII-free reservation lock preventing double-booking a cleaner's 2-hour window.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "bookingId": { "type": "string" },
+        "dateKey": { "type": "string" },
+        "agentId": { "type": "string" },
+        "slotId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "bookingId", "dateKey", "agentId", "slotId", "createdAt"]
+    },
+    "DayConfig": {
+      "title": "DayConfig",
+      "description": "Admin-managed daily operational status, promo discount, and blocked cleaner slots.",
+      "type": "object",
+      "properties": {
+        "dateKey": { "type": "string" },
+        "forceStopped": { "type": "boolean" },
+        "stopReason": { "type": "string" },
+        "discountEnabled": { "type": "boolean" },
+        "discountType": { "type": "string", "enum": ["percent", "peso"] },
+        "discountValue": { "type": "integer" },
+        "promoName": { "type": "string" },
+        "blockedSlots": { "type": "object", "description": "Map of agentId__slotId to block reason" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "dateKey", "forceStopped", "stopReason", "discountEnabled", "discountType",
+        "discountValue", "promoName", "blockedSlots", "updatedBy", "updatedAt"
+      ]
+    },
+    "FeedbackReport": {
+      "title": "FeedbackReport",
+      "description": "Student feedback or mistake report with admin resolution notes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "category": { "type": "string", "enum": ["Clean Quality", "Late / Timing", "Crew Conduct", "App Error / Bug", "Suggestion"] },
+        "relatedBookingId": { "type": "string" },
+        "relatedLabel": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "resolved"] },
+        "adminResolution": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "userName", "userEmail", "category", "relatedBookingId", "relatedLabel",
+        "message", "status", "adminResolution", "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Student cleaning bookings with PII isolated to owner and Sole Admin."
+    },
+    "/slotLocks/{lockId}": {
+      "schema": { "$ref": "#/entities/SlotLock" },
+      "description": "PII-free cleaner slot locks keyed as {dateKey}_{agentId}_{slotId}."
+    },
+    "/dayConfigs/{dateKey}": {
+      "schema": { "$ref": "#/entities/DayConfig" },
+      "description": "Daily force-stop, promo discounts, and agent slot blocks managed by Admin."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/FeedbackReport" },
+      "description": "Student feedback reports and Admin lessons-learned resolutions."
+    }
+  }
+}

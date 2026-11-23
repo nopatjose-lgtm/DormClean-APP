@@ -1,0 +1,252 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidDateKey(key) {
+      return key is string && key.size() == 10 && key.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          request.auth.token.email_verified == true &&
+          request.auth.token.email in ['nopatjose@gmail.com', 'antycepate@gmail.com']
+        )
+      );
+    }
+
+    // --- VALIDATION HELPERS ---
+    function isValidBooking(data) {
+      return data.keys().hasAll([
+               'userId', 'userEmail', 'customerName', 'packageId', 'packageName', 'basePrice',
+               'occupancyType', 'occupancyLabel', 'occupancyFee', 'addons', 'addonsTotal',
+               'othersRequest', 'dateKey', 'dateLabel', 'slotId', 'slotLabel', 'agentId', 'agentName',
+               'barangay', 'streetAddress', 'roomNumber', 'floorGate', 'landmark', 'arrivalNotes',
+               'contactChannel', 'contactHandle', 'paymentMethod', 'paymentStatus', 'gcashRefNumber',
+               'referralCode', 'referralDiscount', 'dayPromoName', 'dayPromoDiscount', 'totalAmount',
+               'status', 'rating', 'tipAmount', 'reviewComment', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'userEmail', 'customerName', 'packageId', 'packageName', 'basePrice',
+               'occupancyType', 'occupancyLabel', 'occupancyFee', 'addons', 'addonsTotal',
+               'othersRequest', 'dateKey', 'dateLabel', 'slotId', 'slotLabel', 'agentId', 'agentName',
+               'barangay', 'streetAddress', 'roomNumber', 'floorGate', 'landmark', 'arrivalNotes',
+               'contactChannel', 'contactHandle', 'paymentMethod', 'paymentStatus', 'gcashRefNumber',
+               'referralCode', 'referralDiscount', 'dayPromoName', 'dayPromoDiscount', 'totalAmount',
+               'status', 'rating', 'tipAmount', 'reviewComment', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 120 &&
+             data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 80 &&
+             data.packageId in ['quick_reset', 'standard_dorm'] &&
+             data.packageName is string && data.packageName.size() >= 3 && data.packageName.size() <= 60 &&
+             data.basePrice is int && data.basePrice >= 0 && data.basePrice <= 1000 &&
+             data.occupancyType in ['solo', 'shared'] &&
+             data.occupancyLabel is string && data.occupancyLabel.size() <= 50 &&
+             data.occupancyFee is int && data.occupancyFee in [0, 100] &&
+             data.addons is list && data.addons.size() <= 5 &&
+             (data.addons.size() == 0 || data.addons[0] is string) &&
+             data.addonsTotal is int && data.addonsTotal >= 0 && data.addonsTotal <= 500 &&
+             data.othersRequest is string && data.othersRequest.size() <= 300 &&
+             isValidDateKey(data.dateKey) &&
+             data.dateLabel is string && data.dateLabel.size() >= 3 && data.dateLabel.size() <= 40 &&
+             data.slotId in ['08_10', '10_12', '13_15', '15_17', '18_20'] &&
+             data.slotLabel is string && data.slotLabel.size() >= 3 && data.slotLabel.size() <= 30 &&
+             data.agentId in ['agent_nopat', 'agent_orit', 'agent_guerrero'] &&
+             data.agentName is string && data.agentName.size() >= 3 && data.agentName.size() <= 60 &&
+             data.barangay in ['Daet Centro', 'Lag-on', 'Magang', 'Bagasbas', 'Camambugan', 'Other Daet Area'] &&
+             data.streetAddress is string && data.streetAddress.size() >= 2 && data.streetAddress.size() <= 160 &&
+             data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 60 &&
+             data.floorGate is string && data.floorGate.size() <= 80 &&
+             data.landmark is string && data.landmark.size() <= 160 &&
+             data.arrivalNotes is string && data.arrivalNotes.size() <= 250 &&
+             data.contactChannel in ['Messenger', 'SMS Text', 'Phone Call', 'WhatsApp'] &&
+             data.contactHandle is string && data.contactHandle.size() >= 2 && data.contactHandle.size() <= 120 &&
+             data.paymentMethod in ['gcash_qr', 'cash_on_arrival'] &&
+             data.paymentStatus in ['unpaid', 'submitted', 'verified'] &&
+             data.gcashRefNumber is string && data.gcashRefNumber.size() <= 40 &&
+             data.referralCode is string && data.referralCode.size() <= 20 &&
+             data.referralDiscount is int && data.referralDiscount in [0, 50] &&
+             data.dayPromoName is string && data.dayPromoName.size() <= 60 &&
+             data.dayPromoDiscount is int && data.dayPromoDiscount >= 0 && data.dayPromoDiscount <= 500 &&
+             data.totalAmount is int && data.totalAmount >= 0 && data.totalAmount <= 2000 &&
+             data.status in ['pending_review', 'confirmed', 'crew_on_site', 'completed', 'cancelled'] &&
+             data.rating is int && data.rating >= 0 && data.rating <= 5 &&
+             data.tipAmount is int && data.tipAmount >= 0 && data.tipAmount <= 500 &&
+             data.reviewComment is string && data.reviewComment.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSlotLock(data) {
+      return data.keys().hasAll(['userId', 'bookingId', 'dateKey', 'agentId', 'slotId', 'createdAt']) &&
+             data.keys().hasOnly(['userId', 'bookingId', 'dateKey', 'agentId', 'slotId', 'createdAt']) &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             isValidId(data.bookingId) &&
+             isValidDateKey(data.dateKey) &&
+             data.agentId in ['agent_nopat', 'agent_orit', 'agent_guerrero'] &&
+             data.slotId in ['08_10', '10_12', '13_15', '15_17', '18_20'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidDayConfig(data) {
+      return data.keys().hasAll([
+               'dateKey', 'forceStopped', 'stopReason', 'discountEnabled', 'discountType',
+               'discountValue', 'promoName', 'blockedSlots', 'updatedBy', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'dateKey', 'forceStopped', 'stopReason', 'discountEnabled', 'discountType',
+               'discountValue', 'promoName', 'blockedSlots', 'updatedBy', 'updatedAt'
+             ]) &&
+             isValidDateKey(data.dateKey) &&
+             data.forceStopped is bool &&
+             data.stopReason is string && data.stopReason.size() <= 120 &&
+             data.discountEnabled is bool &&
+             data.discountType in ['percent', 'peso'] &&
+             data.discountValue is int && data.discountValue >= 0 && data.discountValue <= 500 &&
+             data.promoName is string && data.promoName.size() <= 60 &&
+             data.blockedSlots is map && data.blockedSlots.size() <= 15 &&
+             data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128 &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFeedback(data) {
+      return data.keys().hasAll([
+               'userId', 'userName', 'userEmail', 'category', 'relatedBookingId',
+               'relatedLabel', 'message', 'status', 'adminResolution', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'userName', 'userEmail', 'category', 'relatedBookingId',
+               'relatedLabel', 'message', 'status', 'adminResolution', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 80 &&
+             data.userEmail is string && data.userEmail.size() <= 120 &&
+             data.category in ['Clean Quality', 'Late / Timing', 'Crew Conduct', 'App Error / Bug', 'Suggestion'] &&
+             data.relatedBookingId is string && data.relatedBookingId.size() <= 128 &&
+             data.relatedLabel is string && data.relatedLabel.size() <= 100 &&
+             data.message is string && data.message.size() >= 3 && data.message.size() <= 500 &&
+             data.status in ['open', 'resolved'] &&
+             data.adminResolution is string && data.adminResolution.size() <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // --- COLLECTIONS ---
+
+    match /admins/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && isValidId(bookingId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(bookingId) &&
+                       isValidBooking(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'pending_review' &&
+                       incoming().paymentStatus in ['unpaid', 'submitted'] &&
+                       incoming().rating == 0 &&
+                       incoming().tipAmount == 0 &&
+                       incoming().reviewComment == '' &&
+                       existsAfter(/databases/$(database)/documents/slotLocks/$(incoming().dateKey + '_' + incoming().agentId + '_' + incoming().slotId));
+
+      allow update: if isSignedIn() &&
+                       isValidId(bookingId) &&
+                       isValidBooking(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           existing().userId == request.auth.uid && (
+                             // Action 1: Student submits demo GCash reference number
+                             (existing().status != 'cancelled' &&
+                              incoming().diff(existing()).affectedKeys().hasOnly(['gcashRefNumber', 'paymentStatus', 'updatedAt']) &&
+                              incoming().paymentStatus == 'submitted') ||
+                             // Action 2: Student cancels a pending booking
+                             (existing().status == 'pending_review' &&
+                              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+                              incoming().status == 'cancelled') ||
+                             // Action 3: Student rates & tips a completed booking
+                             (existing().status == 'completed' &&
+                              incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'tipAmount', 'reviewComment', 'updatedAt']) &&
+                              incoming().rating >= 1 && incoming().rating <= 5)
+                           )
+                         )
+                       );
+
+      allow delete: if isAdmin() && isValidId(bookingId);
+    }
+
+    match /slotLocks/{lockId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       isValidId(lockId) &&
+                       isValidSlotLock(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       lockId == (incoming().dateKey + '_' + incoming().agentId + '_' + incoming().slotId);
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(lockId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    match /dayConfigs/{dateKey} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() &&
+                       isValidDateKey(dateKey) &&
+                       isValidDayConfig(incoming()) &&
+                       incoming().dateKey == dateKey;
+      allow update: if isAdmin() &&
+                       isValidDateKey(dateKey) &&
+                       isValidDayConfig(incoming()) &&
+                       incoming().dateKey == existing().dateKey;
+      allow delete: if isAdmin() && isValidDateKey(dateKey);
+    }
+
+    match /feedback/{feedbackId} {
+      allow get: if isSignedIn() && isValidId(feedbackId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(feedbackId) &&
+                       isValidFeedback(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'open' &&
+                       incoming().adminResolution == '';
+
+      allow update: if isAdmin() &&
+                       isValidId(feedbackId) &&
+                       isValidFeedback(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminResolution', 'updatedAt']);
+
+      allow delete: if isAdmin() && isValidId(feedbackId);
+    }
+  }
+}

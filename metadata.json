@@ -1,0 +1,6 @@
+{
+  "name": "DormClean",
+  "description": "Student-friendly dorm and house cleaning booking and admin dispatch app for Daet, Camarines Norte.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
